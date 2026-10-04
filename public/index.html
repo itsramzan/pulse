@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pulse — Internet Speed Test</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #070b14;
+        --panel: rgba(255, 255, 255, 0.04);
+        --line: rgba(255, 255, 255, 0.08);
+        --tx: #eef2ff;
+        --mu: #8b95b0;
+        --c: #38bdf8;
+        --ping: #fbbf24;
+        --down: #38bdf8;
+        --up: #a78bfa;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        font-family: Manrope, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--tx);
+        min-height: 100vh;
+        background-image: radial-gradient(
+            900px 500px at 50% -10%,
+            color-mix(in srgb, var(--c) 22%, transparent),
+            transparent
+          ),
+          radial-gradient(
+            600px 400px at 90% 100%,
+            rgba(167, 139, 250, 0.12),
+            transparent
+          );
+        transition: background-image 0.6s;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 28px 20px 60px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+      .logo i {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, var(--down), var(--up));
+        display: grid;
+        place-items: center;
+      }
+      .logo svg {
+        width: 18px;
+        fill: none;
+        stroke: #07101f;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .net {
+        display: flex;
+        gap: 18px;
+        color: var(--mu);
+        font-size: 13px;
+      }
+      .net b {
+        color: var(--tx);
+        font-weight: 600;
+      }
+      .stage {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 22px;
+        align-items: stretch;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        backdrop-filter: blur(14px);
+        padding: 24px;
+      }
+      .gauge {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 420px;
+      }
+      svg.g {
+        width: 100%;
+        max-width: 340px;
+      }
+      .track,
+      .arc {
+        fill: none;
+        stroke-width: 16;
+        stroke-linecap: round;
+        transform: rotate(135deg);
+        transform-origin: 150px 150px;
+        stroke-dasharray: 565.5 754;
+      }
+      .track {
+        stroke: rgba(255, 255, 255, 0.07);
+      }
+      .arc {
+        stroke: var(--c);
+        stroke-dashoffset: 565.5;
+        transition: stroke-dashoffset 0.18s linear, stroke 0.5s;
+        filter: drop-shadow(0 0 10px var(--c));
+      }
+      .read {
+        position: absolute;
+        top: 44%;
+        text-align: center;
+        transform: translateY(-50%);
+      }
+      .read .n {
+        font-size: 72px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+      .read .u {
+        color: var(--mu);
+        font-size: 15px;
+        margin-top: 6px;
+      }
+      .phase {
+        color: var(--c);
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 6px;
+        transition: color 0.5s;
+      }
+      canvas {
+        width: 100%;
+        height: 70px;
+        margin-top: 6px;
+      }
+      .go {
+        margin-top: 14px;
+        border: 0;
+        cursor: pointer;
+        font: 700 16px Manrope;
+        color: #06101e;
+        padding: 15px 44px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--down), var(--up));
+        box-shadow: 0 10px 30px -8px var(--down);
+        transition: transform 0.15s, opacity 0.2s;
+      }
+      .go:hover {
+        transform: translateY(-2px);
+      }
+      .go:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+      }
+      .go:disabled {
+        opacity: 0.5;
+        cursor: progress;
+        transform: none;
+      }
+      .bar {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 0;
+        height: 3px;
+        background: var(--line);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .bar div {
+        height: 100%;
+        width: 0;
+        background: var(--c);
+        transition: width 0.1s linear;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        align-content: start;
+      }
+      .stat {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+      }
+      .stat.on {
+        border-color: var(--sc);
+      }
+      .stat span {
+        color: var(--mu);
+        font-size: 13px;
+        font-weight: 600;
+        display: block;
+      }
+      .stat strong {
+        display: block;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-top: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      .stat small {
+        color: var(--mu);
+        font-size: 13px;
+        font-weight: 500;
+        margin-left: 3px;
+      }
+      .stat.wide {
+        grid-column: span 2;
+      }
+      .quality {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 2px;
+      }
+      .quality em {
+        font-style: normal;
+        font-size: 13px;
+        padding: 6px 12px;
+        border-radius: 99px;
+        border: 1px solid var(--line);
+        color: var(--mu);
+      }
+      .quality em.ok {
+        color: #4ade80;
+        border-color: rgba(74, 222, 128, 0.35);
+      }
+      .quality em.mid {
+        color: #fbbf24;
+        border-color: rgba(251, 191, 36, 0.35);
+      }
+      .quality em.bad {
+        color: #f87171;
+        border-color: rgba(248, 113, 113, 0.35);
+      }
+      .hist {
+        margin-top: 22px;
+      }
+      .hist h2 {
+        font-size: 16px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .hist button.t {
+        background: none;
+        border: 1px solid var(--line);
+        color: var(--mu);
+        border-radius: 10px;
+        padding: 6px 12px;
+        font: 600 12px Manrope;
+        cursor: pointer;
+      }
+      .hist button.t:hover {
+        color: var(--tx);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        font-variant-numeric: tabular-nums;
+      }
+      th {
+        color: var(--mu);
+        font-weight: 600;
+        text-align: left;
+        padding: 8px 6px;
+        font-size: 12px;
+      }
+      td {
+        padding: 11px 6px;
+        border-top: 1px solid var(--line);
+      }
+      .empty {
+        color: var(--mu);
+        font-size: 14px;
+        padding: 10px 0;
+      }
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translate(-50%, 20px);
+        background: #fff;
+        color: #07101f;
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 14px;
+        opacity: 0;
+        transition: 0.3s;
+        pointer-events: none;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      @media (max-width: 780px) {
+        .stage {
+          grid-template-columns: 1fr;
+        }
+        .net {
+          display: none;
+        }
+        .read .n {
+          font-size: 60px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="logo">
+          <i
+            ><svg viewBox="0 0 24 24">
+              <path d="M3 12h4l3-8 4 16 3-8h4" /></svg></i
+          >Pulse
+        </div>
+        <div class="net">
+          <span>Your IP <b id="ip">…</b></span
+          ><span>Server <b id="srv">…</b></span
+          ><span>Connection <b id="con">…</b></span>
+        </div>
+      </header>
+
+      <main class="stage">
+        <section class="card gauge" aria-live="polite">
+          <div class="phase" id="phase">Ready when you are</div>
+          <svg class="g" viewBox="0 0 300 300" aria-hidden="true">
+            <circle class="track" cx="150" cy="150" r="120" />
+            <circle class="arc" id="arc" cx="150" cy="150" r="120" />
+          </svg>
+          <div class="read">
+            <div class="n" id="val">0</div>
+            <div class="u" id="unit">Mbps</div>
+          </div>
+          <canvas id="spark" width="600" height="140"></canvas>
+          <button class="go" id="go">Start test</button>
+          <div class="bar"><div id="prog"></div></div>
+        </section>
+
+        <section class="stats">
+          <div class="stat" id="s-down" style="--sc: var(--down)">
+            <span>Download</span
+            ><strong id="r-down">–<small>Mbps</small></strong>
+          </div>
+          <div class="stat" id="s-up" style="--sc: var(--up)">
+            <span>Upload</span><strong id="r-up">–<small>Mbps</small></strong>
+          </div>
+          <div class="stat" id="s-ping" style="--sc: var(--ping)">
+            <span>Latency</span><strong id="r-ping">–<small>ms</small></strong>
+          </div>
+          <div class="stat">
+            <span>Jitter</span><strong id="r-jit">–<small>ms</small></strong>
+          </div>
+          <div class="stat">
+            <span>Packet loss</span
+            ><strong id="r-loss">–<small>%</small></strong>
+          </div>
+          <div class="stat">
+            <span>Data used</span
+            ><strong id="r-data">–<small>MB</small></strong>
+          </div>
+          <div class="stat wide">
+            <span>What your connection can handle</span>
+            <div class="quality" id="quality" style="margin-top: 10px">
+              <em>Run a test to see</em>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <section class="card hist">
+        <h2>
+          Recent results
+          <span
+            ><button class="t" id="copy">Copy last result</button>
+            <button class="t" id="clear">Clear</button></span
+          >
+        </h2>
+        <div id="table"></div>
+      </section>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const $ = (s) => document.querySelector(s),
+        root = document.documentElement.style;
+      const ARC = 565.5,
+        COLORS = { ping: "#fbbf24", down: "#38bdf8", up: "#a78bfa" };
+      const logFrac = (v) => Math.min(1, Math.log10(1 + v) / 3); // 0–1000 Mbps, logarithmic
+      let series = [],
+        total = 0,
+        running = false,
+        last = null;
+
+      function gauge(v, kind) {
+        const f = kind === "ping" ? Math.min(1, v / 200) : logFrac(v);
+        $("#arc").style.strokeDashoffset = ARC * (1 - f);
+        $("#val").textContent = v >= 100 ? v.toFixed(0) : v.toFixed(1);
+      }
+      function phase(name, key, unit) {
+        root.setProperty("--c", COLORS[key]);
+        $("#phase").textContent = name;
+        $("#unit").textContent = unit;
+        document
+          .querySelectorAll(".stat")
+          .forEach((e) => e.classList.remove("on"));
+        $("#s-" + key).classList.add("on");
+        series = [];
+        gauge(0, key);
+      }
+      function spark() {
+        const c = $("#spark"),
+          x = c.getContext("2d"),
+          W = c.width,
+          H = c.height;
+        x.clearRect(0, 0, W, H);
+        if (series.length < 2) return;
+        const max = Math.max(...series) * 1.15 || 1,
+          col = getComputedStyle(document.documentElement).getPropertyValue(
+            "--c"
+          );
+        const g = x.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, col + "55");
+        g.addColorStop(1, col + "00");
+        x.beginPath();
+        series.forEach((v, i) =>
+          x[i ? "lineTo" : "moveTo"]((i / 99) * W, H - (v / max) * H * 0.95 - 2)
+        );
+        x.strokeStyle = col;
+        x.lineWidth = 3;
+        x.lineJoin = "round";
+        x.stroke();
+        x.lineTo(((series.length - 1) / 99) * W, H);
+        x.lineTo(0, H);
+        x.fillStyle = g;
+        x.fill();
+      }
+      const set = (id, v, dec = 1) =>
+        ($("#r-" + id).firstChild.textContent =
+          typeof v === "number" ? v.toFixed(dec) : v);
+
+      /* ---------- Latency, jitter, packet loss ---------- */
+      async function pingTest() {
+        const t = [];
+        let lost = 0;
+        for (let i = 0; i < 20; i++) {
+          const c = new AbortController(),
+            to = setTimeout(() => c.abort(), 2000),
+            s = performance.now();
+          try {
+            await fetch("/ping?t=" + Math.random(), {
+              cache: "no-store",
+              signal: c.signal,
+            });
+            t.push(performance.now() - s);
+          } catch {
+            lost++;
+          }
+          clearTimeout(to);
+          if (t.length) {
+            gauge(t[t.length - 1], "ping");
+            series.push(t[t.length - 1]);
+            spark();
+          }
+          $("#prog").style.width = ((i + 1) / 20) * 100 + "%";
+          await new Promise((r) => setTimeout(r, 60));
+        }
+        if (!t.length) throw new Error("Server unreachable");
+        const sorted = [...t].sort((a, b) => a - b),
+          med = sorted[sorted.length >> 1];
+        const jit =
+          t.slice(1).reduce((a, v, i) => a + Math.abs(v - t[i]), 0) /
+          Math.max(1, t.length - 1);
+        return { ping: med, jitter: jit, loss: (lost / 20) * 100 };
+      }
+
+      /* ---------- Throughput meter (shared by download & upload) ---------- */
+      function meter(seconds, start) {
+        return new Promise((res) => {
+          const ac = new AbortController();
+          let bytes = 0,
+            lastB = 0,
+            ema = 0,
+            wt = 0,
+            wb = 0;
+          const t0 = performance.now();
+          let last = t0;
+          series = [];
+          start((n) => (bytes += n), ac.signal);
+          const iv = setInterval(() => {
+            const now = performance.now(),
+              el = (now - t0) / 1000;
+            const inst = ((bytes - lastB) * 8) / 1e6 / ((now - last) / 1000);
+            last = now;
+            lastB = bytes;
+            ema = ema ? ema * 0.7 + inst * 0.3 : inst;
+            if (!wt && el > 1.5) {
+              wt = now;
+              wb = bytes;
+            } // skip TCP slow-start warm-up
+            gauge(ema);
+            series.push(ema);
+            if (series.length > 100) series.shift();
+            spark();
+            $("#prog").style.width = Math.min(100, (el / seconds) * 100) + "%";
+            if (el >= seconds) {
+              clearInterval(iv);
+              ac.abort();
+              total += bytes;
+              res(wt ? ((bytes - wb) * 8) / 1e6 / ((now - wt) / 1000) : ema);
+            }
+          }, 100);
+        });
+      }
+      const downloadTest = () =>
+        meter(10, (add, sig) => {
+          for (let i = 0; i < 4; i++)
+            (async () => {
+              while (!sig.aborted)
+                try {
+                  const r = await fetch("/download?mb=50&t=" + Math.random(), {
+                      signal: sig,
+                      cache: "no-store",
+                    }),
+                    rd = r.body.getReader();
+                  for (;;) {
+                    const { done, value } = await rd.read();
+                    if (done) break;
+                    add(value.length);
+                  }
+                } catch {}
+            })();
+        });
+      const uploadTest = () => {
+        const buf = new Uint8Array(4 << 20),
+          tile = new Uint8Array(65536);
+        crypto.getRandomValues(tile);
+        for (let i = 0; i < buf.length; i += tile.length) buf.set(tile, i);
+        const blob = new Blob([buf]);
+        return meter(8, (add, sig) => {
+          for (let i = 0; i < 4; i++)
+            (function go() {
+              if (sig.aborted) return;
+              const x = new XMLHttpRequest();
+              let l = 0;
+              x.open("POST", "/upload");
+              x.upload.onprogress = (e) => {
+                add(e.loaded - l);
+                l = e.loaded;
+              };
+              x.onload = x.onerror = go;
+              sig.addEventListener("abort", () => x.abort());
+              x.send(blob);
+            })();
+        });
+      };
+
+      /* ---------- Orchestration ---------- */
+      async function run() {
+        if (running) return;
+        running = true;
+        total = 0;
+        const b = $("#go");
+        b.disabled = true;
+        b.textContent = "Testing…";
+        ["down", "up", "ping", "jit", "loss", "data"].forEach((k) =>
+          set(k, "–")
+        );
+        try {
+          phase("Measuring latency", "ping", "ms");
+          const p = await pingTest();
+          set("ping", p.ping);
+          set("jit", p.jitter);
+          set("loss", p.loss, 0);
+          phase("Testing download", "down", "Mbps");
+          const d = await downloadTest();
+          set("down", d, d < 100 ? 1 : 0);
+          phase("Testing upload", "up", "Mbps");
+          const u = await uploadTest();
+          set("up", u, u < 100 ? 1 : 0);
+          set("data", total / 1048576, 0);
+          last = { t: Date.now(), down: d, up: u, ...p };
+          save(last);
+          quality(last);
+          gauge(d);
+          $("#unit").textContent = "Mbps download";
+          $("#phase").textContent = "Test complete";
+          root.setProperty("--c", COLORS.down);
+          document
+            .querySelectorAll(".stat")
+            .forEach((e) => e.classList.remove("on"));
+        } catch (e) {
+          $("#phase").textContent = "Test failed — check the server connection";
+        }
+        b.disabled = false;
+        b.textContent = "Test again";
+        running = false;
+        $("#prog").style.width = "0";
+      }
+
+      function quality(r) {
+        const row = (label, lvl) => `<em class="${lvl}">${label}</em>`;
+        const q = [
+          row(
+            "4K streaming",
+            r.down >= 25 ? "ok" : r.down >= 10 ? "mid" : "bad"
+          ),
+          row(
+            "Video calls",
+            r.down >= 5 && r.up >= 3 && r.ping < 100
+              ? "ok"
+              : r.down >= 2
+              ? "mid"
+              : "bad"
+          ),
+          row(
+            "Online gaming",
+            r.ping < 40 && r.jitter < 15 && r.loss < 1
+              ? "ok"
+              : r.ping < 80
+              ? "mid"
+              : "bad"
+          ),
+          row(
+            "Large downloads",
+            r.down >= 100 ? "ok" : r.down >= 30 ? "mid" : "bad"
+          ),
+          row("Cloud backup", r.up >= 20 ? "ok" : r.up >= 5 ? "mid" : "bad"),
+        ];
+        $("#quality").innerHTML = q.join("");
+      }
+
+      /* ---------- History ---------- */
+      const load = () => {
+        try {
+          return JSON.parse(localStorage.getItem("pulse") || "[]");
+        } catch {
+          return [];
+        }
+      };
+      function save(r) {
+        try {
+          localStorage.setItem(
+            "pulse",
+            JSON.stringify([r, ...load()].slice(0, 20))
+          );
+        } catch {}
+        render();
+      }
+      function render() {
+        const h = load();
+        $("#table").innerHTML = h.length
+          ? `<div style="overflow-x:auto"><table><tr><th>Date</th><th>Download</th><th>Upload</th><th>Latency</th><th>Jitter</th><th>Loss</th></tr>${h
+              .map(
+                (r) =>
+                  `<tr><td>${new Date(r.t).toLocaleString([], {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}</td><td>${r.down.toFixed(1)} Mbps</td><td>${r.up.toFixed(
+                    1
+                  )} Mbps</td><td>${r.ping.toFixed(
+                    0
+                  )} ms</td><td>${r.jitter.toFixed(
+                    1
+                  )} ms</td><td>${r.loss.toFixed(0)}%</td></tr>`
+              )
+              .join("")}</table></div>`
+          : '<div class="empty">No tests yet. Press Start test to measure your connection.</div>';
+      }
+      function toast(m) {
+        const t = $("#toast");
+        t.textContent = m;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 1800);
+      }
+
+      $("#go").onclick = run;
+      $("#clear").onclick = () => {
+        try {
+          localStorage.removeItem("pulse");
+        } catch {}
+        render();
+      };
+      $("#copy").onclick = () => {
+        const r = last || load()[0];
+        if (!r) return toast("Run a test first");
+        const txt = `Pulse speed test — Download ${r.down.toFixed(
+          1
+        )} Mbps · Upload ${r.up.toFixed(1)} Mbps · Latency ${r.ping.toFixed(
+          0
+        )} ms · Jitter ${r.jitter.toFixed(1)} ms · Loss ${r.loss.toFixed(0)}%`;
+        navigator.clipboard.writeText(txt).then(
+          () => toast("Result copied"),
+          () => toast("Copy not available")
+        );
+      };
+
+      fetch("/info")
+        .then((r) => r.json())
+        .then((i) => {
+          $("#ip").textContent = i.ip;
+          $("#srv").textContent = i.server;
+        })
+        .catch(() => {});
+      const nc = navigator.connection;
+      $("#con").textContent = nc
+        ? (nc.effectiveType || "online").toUpperCase()
+        : "Online";
+      render();
+    </script>
+  </body>
+</html>
