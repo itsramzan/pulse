@@ -4,7 +4,7 @@ const http = require("http"),
   os = require("os"),
   path = require("path"),
   crypto = require("crypto");
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const CHUNK = crypto.randomBytes(1 << 20); // 1 MB of incompressible data
 const NOCACHE = {
   "Cache-Control": "no-store, no-cache, must-revalidate",
